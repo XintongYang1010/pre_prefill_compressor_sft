@@ -104,6 +104,7 @@ def test_explicit_budgeted_update_installs_capped_clipped_joint_gradient() -> No
     )
     assert audit.joint_norm_before_clip > 1.0
     assert audit.joint_norm_after_clip == pytest.approx(1.0)
+    assert audit.joint_gradient_active
     assert parameter.grad is not None
     assert float(parameter.grad.norm().item()) == pytest.approx(1.0)
     assert audit.pairwise_cosines["ce|vsd"] == pytest.approx(1.0)
@@ -111,6 +112,8 @@ def test_explicit_budgeted_update_installs_capped_clipped_joint_gradient() -> No
 
 def test_zero_ce_gradient_safely_disables_capped_auxiliary() -> None:
     parameter = torch.nn.Parameter(torch.tensor([2.0, -1.0]))
+    original = parameter.detach().clone()
+    optimizer = torch.optim.AdamW([parameter], lr=0.1, weight_decay=0.5)
     controller = EMABoundedGradientController(
         ("ce", "vsd"),
         GradientBudgetConfig(ema_beta=0.0, minimum_weight=1.0, maximum_weight=1.0),
@@ -132,5 +135,7 @@ def test_zero_ce_gradient_safely_disables_capped_auxiliary() -> None:
     assert audit.weights_after_cap["vsd"] == 0.0
     assert audit.cap is not None and audit.cap.cap_applied
     assert audit.joint_norm_before_clip == 0.0
-    assert parameter.grad is not None
-    assert torch.equal(parameter.grad, torch.zeros_like(parameter))
+    assert not audit.joint_gradient_active
+    assert parameter.grad is None
+    optimizer.step()
+    assert torch.equal(parameter, original)

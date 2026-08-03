@@ -64,6 +64,7 @@ class GradientUpdateAudit:
     joint_norm_after_clip: float
     global_clip_scale: float
     data_parallel_world_size: int
+    joint_gradient_active: bool
 
 
 class EMABoundedGradientController:
@@ -512,7 +513,15 @@ def build_budgeted_gradient_update(
         weights_after_cap,
         maximum_global_norm=maximum_global_norm,
     )
-    install_parameter_gradients(trainable, combined)
+    joint_gradient_active = norm_before > controller.config.activation_epsilon
+    if joint_gradient_active:
+        install_parameter_gradients(trainable, combined)
+    else:
+        # AdamW applies decoupled weight decay to parameters whose gradient is
+        # an explicit zero tensor. Restore None so a zero-joint step is a true
+        # no-op even if the caller still invokes optimizer.step().
+        for parameter in trainable:
+            parameter.grad = None
     return GradientUpdateAudit(
         objective_norms=dict(gradient_set.norms),
         pairwise_cosines=dict(gradient_set.pairwise_cosines),
@@ -523,4 +532,5 @@ def build_budgeted_gradient_update(
         joint_norm_after_clip=norm_after,
         global_clip_scale=clip_scale,
         data_parallel_world_size=gradient_set.data_parallel_world_size,
+        joint_gradient_active=joint_gradient_active,
     )
