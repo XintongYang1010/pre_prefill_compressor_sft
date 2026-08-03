@@ -338,10 +338,9 @@ def combine_objective_gradients(
         raise ValueError("maximum_global_norm must be finite and positive")
     normalized_weights = {key: float(value) for key, value in weights.items()}
     if any(
-        not math.isfinite(value) or value <= 0.0
-        for value in normalized_weights.values()
+        not math.isfinite(value) or value < 0.0 for value in normalized_weights.values()
     ):
-        raise FloatingPointError("weights must be finite and positive")
+        raise FloatingPointError("weights must be finite and non-negative")
 
     keys = tuple(objective_gradients)
     parameter_count = len(objective_gradients[keys[0]])

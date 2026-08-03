@@ -96,3 +96,4 @@ def test_cpu_synthetic_training_example_runs() -> None:
     metrics = namespace["run_training"](steps=1)
     assert set(metrics) >= {"task_ce", "response_jsd", "vision_semantic", "total"}
     assert all(torch.isfinite(torch.tensor(value)) for value in metrics.values())
+    assert metrics["joint_gradient_norm"] <= 1.0 + 1e-6

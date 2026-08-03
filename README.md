@@ -18,7 +18,7 @@ Can a small post-merger compressor preserve task behavior while reducing the vis
 
 ```mermaid
 flowchart LR
-    I["Image / video"] --> V["Frozen vision tower"]
+    I["Image(s)"] --> V["Frozen vision tower"]
     V --> M["Frozen native merger + DeepStack mergers"]
     M --> C["Trainable grid-token compressor"]
     C --> L["Frozen 32B LLM"]

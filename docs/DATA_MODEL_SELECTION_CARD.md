@@ -52,6 +52,26 @@ Stage 0 did not use task labels or an LLM response loss. The later RetentionKD
 adaptation used 1,000 task-labeled examples. Consequently, “limited-label task
 adaptation” is supported; “the entire system used only 1,000 examples” is not.
 
+## Architecture lineage boundary
+
+The full-data b128 Stage 0 aggregates above belong to an earlier capacity arm;
+they are not presented as the initialization of the selected RetentionKD line.
+The selected line that is currently supported is:
+
+```text
+pre-retention b512 compressor checkpoint
+  |-- frozen copy -> behavior teacher
+  `-- trainable copy -> RetentionKD student -> selected Full-u64 checkpoint
+```
+
+The behavior teacher and student therefore start from the same b512 compressor
+state and use the same compressed-token budget. The uncompressed feature teacher
+is a reference tensor path, not another trainable checkpoint. The exact earlier
+warm-up provenance, example count, and parameter count for the selected b512
+checkpoint have not yet been consolidated into the public model-selection
+ledger and remain `AUDIT_PENDING`; they must not be inferred from the historical
+b128 aggregates or the illustrative public b128 YAML configuration.
+
 ## RetentionKD model selection
 
 The current recipe uses two functional prompt contracts: one auxiliary

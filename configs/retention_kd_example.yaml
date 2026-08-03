@@ -1,4 +1,5 @@
 compressor:
+  # Illustrative public configuration, not the selected private b512 lineage.
   mode: stride2
   spatial_stride: 2
   bottleneck_dim: 128

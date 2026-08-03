@@ -15,11 +15,11 @@ from pre_prefill_compressor import (
     EMABoundedGradientController,
     GridTokenCompressor,
     VisionCompressorConfig,
-    apply_ce_anchor_cap,
+    build_budgeted_gradient_update,
     effective_number_weights,
     generalized_jsd_loss,
-    masked_reconstruction_loss,
     normalized_feature_distillation_loss,
+    replicated_slot_reconstruction_loss,
     vision_language_affinity_distillation_loss,
     vision_semantic_distillation_loss,
     weighted_classification_loss,
@@ -105,28 +105,30 @@ def run_training(steps: int = 3) -> dict[str, float]:
                 ),
                 (
                     "feature_protection",
-                    feature.loss + 0.1 * masked_reconstruction_loss(output),
+                    feature.loss + 0.1 * replicated_slot_reconstruction_loss(output),
                 ),
             )
         )
-        gradient_norms = controller.audit_and_update(
-            objectives, compressor.parameters()
-        )
-        capped_weights, _ = apply_ce_anchor_cap(
-            controller.weights,
-            gradient_norms,
-            target_key="vision_semantic",
+        audit = build_budgeted_gradient_update(
+            controller,
+            objectives,
+            compressor.parameters(),
             ce_key="task_ce",
-            maximum_ratio=1.0,
+            capped_auxiliary_key="vision_semantic",
+            maximum_auxiliary_to_ce_ratio=1.0,
+            maximum_global_norm=1.0,
         )
-        total = controller.weighted_sum(objectives, weights=capped_weights)
-        total.backward()
-        torch.nn.utils.clip_grad_norm_(compressor.parameters(), max_norm=1.0)
+        # The scalar below is for readable logging only. The optimizer update
+        # already uses the explicit DP-aware objective-gradient construction.
+        total = torch.stack(
+            [objectives[key] * audit.weights_after_cap[key] for key in objective_keys]
+        ).sum()
         optimizer.step()
         last_values = {
             key: float(value.detach().item()) for key, value in objectives.items()
         }
         last_values["total"] = float(total.detach().item())
+        last_values["joint_gradient_norm"] = audit.joint_norm_after_clip
 
     return last_values
 
