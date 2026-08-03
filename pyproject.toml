@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pre-prefill-compressor"
+version = "0.1.0"
+description = "Clean-room reference implementation of post-merger visual-token compression with retention distillation."
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+  "torch>=2.2",
+]
+
+[project.optional-dependencies]
+test = [
+  "numpy>=1.24",
+  "pytest>=8",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]

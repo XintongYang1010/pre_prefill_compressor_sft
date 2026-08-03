@@ -1,0 +1,34 @@
+compressor:
+  mode: stride2
+  spatial_stride: 2
+  bottleneck_dim: 128
+  normalization_epsilon: 1.0e-6
+
+training:
+  optimizer: adamw
+  learning_rate: 5.0e-6
+  weight_decay: 0.01
+  global_batch_size: 8
+  updates: 125
+  checkpoint_updates: [8, 32, 64, 125]
+  on_policy_fraction: 0.5
+  global_grad_clip: 1.0
+  objective_activation_epsilon: 1.0e-12
+
+objectives:
+  hard_label_ce: 1.0
+  feature_protection: 0.1
+  response_jsd: 1.0
+  vision_semantic: 0.1
+  vision_language_affinity: 0.1
+
+gradient_budget:
+  ema_beta: 0.9
+  minimum_weight: 0.25
+  maximum_weight: 4.0
+  vision_semantic_to_ce_cap: 1.0
+
+data:
+  # Private rows are loaded by an external authorized adapter and are never
+  # distributed with this repository.
+  adapter: user_provided
