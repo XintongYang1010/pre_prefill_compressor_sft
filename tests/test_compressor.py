@@ -8,6 +8,7 @@ from pre_prefill_compressor import (
     build_image_token_plan,
     compress_feature_branches,
     masked_reconstruction_loss,
+    replicated_slot_reconstruction_loss,
 )
 
 
@@ -41,6 +42,7 @@ def test_odd_grid_uses_replicated_edge_for_four_way_teacher_mean() -> None:
     assert gathered[-1, :, 0].tolist() == [14.0, 14.0, 14.0, 14.0]
     assert gathered[2, :, 0].tolist() == [4.0, 4.0, 9.0, 9.0]
     manual = F.mse_loss(output.reconstructed_source, output.grouped_source.detach())
+    assert torch.allclose(replicated_slot_reconstruction_loss(output), manual)
     assert torch.allclose(masked_reconstruction_loss(output), manual)
 
 

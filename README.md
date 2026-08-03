@@ -52,10 +52,16 @@ See [the complete method](docs/METHOD.md), [training-framework notes](docs/ENGIN
 
 ## Repository map
 
-- `src/pre_prefill_compressor/`: clean-room compressor, Qwen3-VL-style placeholder/grid adapter, retention losses, gradient budgeting, evaluation, and checkpoint utilities.
+- `src/pre_prefill_compressor/`: clean-room compressor, Qwen3-VL-style placeholder/grid adapter, retention losses, explicit per-objective DP gradient construction, evaluation, and checkpoint utilities.
 - `examples/train_synthetic.py`: CPU synthetic demonstration; it does not reproduce the private experiment.
 - `tests/`: contract and numerical tests using generated tensors only.
 - `docs/EXPERIMENT_STATUS.md`: exact approved aggregate results, denominators, and non-claims.
+- `docs/INTEGRATION_CONTRACT_AND_PSEUDOCODE.md`: sanitized Qwen forward,
+  DeepStack, M-RoPE, shape, and image-only contracts.
+- `docs/DATA_MODEL_SELECTION_CARD.md`: anonymous split/training/search accounting
+  and explicit audit gaps.
+- `docs/OPEN_EVIDENCE_AND_EXPERIMENT_BACKLOG.md`: requested-material matrix,
+  gradient telemetry, live pending states, and prioritized experiments.
 - `docs/NOVELTY_AND_NONCLAIMS.md`: closest-work analysis and provisional novelty boundary.
 - `docs/WEB_PRO_REVIEW_PACKET.md`: self-contained prompt for a web-enabled research reviewer.
 

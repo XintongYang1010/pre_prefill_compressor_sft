@@ -23,14 +23,20 @@ A **main visual token** is a token in the primary visual sequence consumed by th
 For each image/frame region, let the native-merger feature grid be
 `X in R^(T x H x W x D)`. With spatial stride `s=2`, the compressor:
 
-1. pads only inside the current image region when `H` or `W` is odd;
+1. replicates the final valid row/column only inside the current image region
+   when `H` or `W` is odd;
 2. forms non-overlapping spatial groups without crossing image boundaries;
-3. computes the grouped teacher target (the mean of valid members);
+3. computes the historical grouped teacher target as a four-slot mean,
+   including replicated odd-edge slots;
 4. predicts the compressed representation through a small bottleneck MLP,
    without a direct teacher-mean skip connection;
 5. emits one token per group and a local reconstruction used only for protection loss.
 
 The same `ImageTokenPlan` is applied to the main stream, all DeepStack branches, image placeholders, and the LLM-facing position grid. This prevents a quality result from being confounded by inconsistent token ordering or position IDs.
+
+The replicated-slot teacher/reconstruction rule gives odd-edge features repeated
+weight. It is disclosed as the exact current recipe, not described as an
+unbiased masked estimator. A valid-slot-masked alternative remains an ablation.
 
 ## 3. Three-stage training history
 
@@ -100,6 +106,12 @@ Loss weights alone do not control the optimizer contribution of heterogeneous ob
 4. applies bounded inverse-norm weights in `[0.25, 4.0]`;
 5. caps the weighted VSD contribution at `1.0 x` the hard-CE contribution;
 6. combines gradients and applies global norm clipping at `1.0`.
+
+The clean-room implementation follows this as an explicit vector update: it
+DP-averages each objective's parameter-gradient tensors, computes norms and
+pairwise cosines from those averaged vectors, applies the CE anchor, installs
+the clipped joint vector in `parameter.grad`, and only then steps the optimizer.
+It is not implemented as a weighted scalar loss followed by a single backward.
 
 An activation threshold of `1e-12` prevents numerical noise from being treated as an active objective. The selected training run used AdamW, learning rate `5e-6`, global batch 8, and checkpoints after updates 8, 32, 64, and 125.
 

@@ -1,6 +1,6 @@
 # Experiment Status
 
-Last evidence refresh: **2026-08-03 17:16 China Standard Time**.
+Last evidence refresh: **2026-08-03 19:42 China Standard Time**.
 
 ## 1. Failure that motivated RetentionKD
 
@@ -65,7 +65,13 @@ The Full-u64 F1 of `65.45%` above comes from the independent Dev256, whereas the
 
 ### Ongoing same-order Full-u64 Dev2,141
 
-The current C-only run reuses the exact complete identity and pre-retention baselines and evaluates Full-u64 on the same ordered Dev2,141. At the last refresh it had `1,813 / 2,141` durable successful rows (`84.68%`), 0 processing errors, and no finalizer metrics. Attempt records had advanced to `2,413` while the durable-success count remained at `1,813`; this is a runtime monitoring signal, not a terminal quality result or a terminal failure. The conclusion “Full-u64 beats identity100” remains **pending this run's complete paired result**.
+The current C-only run reuses the exact complete identity and pre-retention
+baselines and evaluates Full-u64 on the same ordered Dev2,141. At the latest
+read-only refresh it had `1,849 / 2,141` durable successful rows (`86.36%`), 0
+processing errors, and no finalizer metrics. Attempt records had advanced to
+`2,588`; this is a runtime/recovery counter, not a fixed-denominator result.
+The conclusion “Full-u64 beats identity100” remains **pending this run's
+complete paired result**.
 
 ## 5. Token result and remaining gates
 

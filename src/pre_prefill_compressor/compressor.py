@@ -291,7 +291,24 @@ def compress_feature_branches(
     }
 
 
-def masked_reconstruction_loss(output: FeatureCompressionOutput) -> torch.Tensor:
-    """Reconstruct all four group slots, including replicated odd-grid edges."""
+def replicated_slot_reconstruction_loss(
+    output: FeatureCompressionOutput,
+) -> torch.Tensor:
+    """Reconstruct four slots, including replicated odd-grid edge entries.
+
+    This is the exact historical recipe. It is intentionally *not* a valid-slot
+    masked loss: a replicated edge token receives repeated weight. A true-mask
+    alternative remains an explicit architecture ablation.
+    """
 
     return F.mse_loss(output.reconstructed_source, output.grouped_source.detach())
+
+
+def masked_reconstruction_loss(output: FeatureCompressionOutput) -> torch.Tensor:
+    """Backward-compatible alias for :func:`replicated_slot_reconstruction_loss`.
+
+    The old name is retained for package compatibility; it must not be read as
+    evidence that replicated odd-edge slots are excluded.
+    """
+
+    return replicated_slot_reconstruction_loss(output)

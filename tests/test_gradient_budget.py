@@ -7,6 +7,8 @@ from pre_prefill_compressor import (
     EMABoundedGradientController,
     GradientBudgetConfig,
     apply_ce_anchor_cap,
+    build_budgeted_gradient_update,
+    collect_objective_gradients,
 )
 
 
@@ -54,3 +56,54 @@ def test_gradient_measurement_and_state_roundtrip() -> None:
     restored.load_state_dict(controller.state_dict())
     assert restored.ema_norms == controller.ema_norms
     assert restored.weights == controller.weights
+
+
+def test_collect_objective_gradients_reports_norms_and_conflict() -> None:
+    parameter = torch.nn.Parameter(torch.tensor([1.0, -2.0]))
+    objectives = OrderedDict(
+        (
+            ("ce", parameter.sum()),
+            ("opposed", -2.0 * parameter.sum()),
+        )
+    )
+    result = collect_objective_gradients(
+        objectives,
+        [parameter],
+        average_across_data_parallel=False,
+    )
+    assert result.data_parallel_world_size == 1
+    assert result.norms["opposed"] == pytest.approx(2.0 * result.norms["ce"])
+    assert result.pairwise_cosines["ce|opposed"] == pytest.approx(-1.0)
+
+
+def test_explicit_budgeted_update_installs_capped_clipped_joint_gradient() -> None:
+    parameter = torch.nn.Parameter(torch.tensor([2.0, -1.0]))
+    controller = EMABoundedGradientController(
+        ("ce", "vsd"),
+        GradientBudgetConfig(ema_beta=0.0, minimum_weight=1.0, maximum_weight=1.0),
+    )
+    objectives = OrderedDict(
+        (
+            ("ce", parameter.square().sum()),
+            ("vsd", 100.0 * parameter.square().sum()),
+        )
+    )
+    audit = build_budgeted_gradient_update(
+        controller,
+        objectives,
+        [parameter],
+        ce_key="ce",
+        capped_auxiliary_key="vsd",
+        maximum_auxiliary_to_ce_ratio=1.0,
+        maximum_global_norm=1.0,
+        average_across_data_parallel=False,
+    )
+    assert audit.cap is not None and audit.cap.cap_applied
+    assert audit.cap.target_capped_weighted_norm == pytest.approx(
+        audit.cap.reference_weighted_norm
+    )
+    assert audit.joint_norm_before_clip > 1.0
+    assert audit.joint_norm_after_clip == pytest.approx(1.0)
+    assert parameter.grad is not None
+    assert float(parameter.grad.norm().item()) == pytest.approx(1.0)
+    assert audit.pairwise_cosines["ce|vsd"] == pytest.approx(1.0)

@@ -28,6 +28,12 @@ Read these repository files before reaching a verdict:
 4. `docs/NOVELTY_AND_NONCLAIMS.md` — known closest work and forbidden claims.
 5. `src/` and `tests/` — clean-room reference implementation and synthetic
    contract tests.
+6. `docs/INTEGRATION_CONTRACT_AND_PSEUDOCODE.md` — sanitized actual Qwen,
+   DeepStack, M-RoPE, and shape contracts.
+7. `docs/DATA_MODEL_SELECTION_CARD.md` — private split, Stage 0, model-selection,
+   and audit accounting.
+8. `docs/OPEN_EVIDENCE_AND_EXPERIMENT_BACKLOG.md` — requested-material
+   disposition, gradient telemetry, live pending results, and experiment queue.
 
 If a listed file is missing or incomplete, treat that as a review finding rather
 than filling in the gap by assumption.
@@ -78,6 +84,25 @@ weighted VSD gradient against hard-label CE, sums the gradients, and applies a
 global clip. The stated motivation is that task-only compressor SFT collapsed
 recall and structured-output validity, while unconstrained VSD gradients could
 dominate the only trainable module.
+
+ARTIFACT-REVISION CHECK
+
+Inspect the current commit rather than reusing a finding from an older snapshot.
+The clean-room gradient module now explicitly differentiates each objective,
+optionally all-reduces every parameter-gradient tensor and divides by DP world
+size, reports pairwise gradient cosines, applies the CE cap, sums the explicit
+vectors, globally clips them, and writes the result to `parameter.grad`. Tests
+cover an opposing-gradient cosine and the cap/clip update. It still lacks a
+public real multi-GPU equivalence test, and historical runs did not persist a
+complete cosine trajectory; identify those narrower gaps instead of claiming
+that the code only measures local norms and calls backward on a weighted scalar.
+
+The sanitized Qwen contract is image-only. It recomputes three-axis M-RoPE
+position IDs and rope delta from the compacted grid and supplies three
+DeepStack branches to the decoder. Vision blocks 8/16/24 are extraction points;
+they are not decoder injection layers 8/16/24. The pinned Qwen3-VL interface
+does not use `mm_token_type_ids`. Video and a public end-to-end model wrapper
+remain missing.
 
 KNOWN PRIOR-ART OVERLAP THAT MUST NOT BE IGNORED
 
@@ -137,6 +162,12 @@ Dev2,141 has F1 61.22%. Those rows use different members, class prevalence, and
 denominators; they must not be compared. A same-order Full-u64 Dev2,141 run may
 still be in progress. Check the latest EXPERIMENT_STATUS.md and use a newer
 terminal paired result only if its complete contract is available.
+
+An older, non-RetentionKD compressor study did measure exploratory TTFT and
+prompt-token changes, but quality regressed and completion length/end-to-end
+latency increased. Therefore the accurate gap is "no publication-grade,
+fixed-contract serving result for selected Full-u64," not "TTFT was never
+measured at all." See `docs/OPEN_EVIDENCE_AND_EXPERIMENT_BACKLOG.md`.
 
 REQUIRED OUTPUT
 

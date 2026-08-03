@@ -41,10 +41,19 @@ Control follows the same code path but disables response JSD, VSD, and VLAD befo
 - **Strict objective validation:** terminal validation compares the exact objective key set, independent of serialized dictionary order.
 - **Arm-specific runtime fields:** machine-local paths are validated inside each arm but are not required to be byte-identical across arms; semantic model/data contracts still must match.
 - **Durable evaluation resume:** a completed row is skipped only after its receipt is valid. Partial prefixes, transport-only success, or malformed rows do not become quality evidence.
+- **Gradient-direction audit:** the clean-room update records pairwise cosine
+  similarity between DP-averaged objective-gradient vectors. Historical runs
+  did not persist a complete cosine trajectory, so direction-conflict claims
+  remain an experiment rather than an inferred fact.
 
 ## What the public code intentionally leaves out
 
-The clean-room package implements the mathematical and state-management core. It does not include private dataset loaders, production prompts, internal distributed launchers, model-serving wrappers, storage paths, signed receipts, cluster configuration, or platform finalizers. Those integrations are environment-specific and are not needed to review the method.
+The clean-room package implements the mathematical and state-management core,
+including explicit per-objective gradient tensors and optional
+`torch.distributed` world averaging. It does not include private dataset
+loaders, production prompts, internal launchers, full model/serving wrappers,
+storage paths, signed receipts, cluster configuration, or platform finalizers.
+Those integrations are environment-specific and are not copied here.
 
 ## Reproducibility levels
 
